@@ -2,16 +2,19 @@
 <html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Daily Expenses Report</title>
     
-    <!-- Meta tags for PWA/Installable feel -->
+    <!-- Meta tags for native app feel -->
     <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Expenses">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
     
-    <!-- Inline Web App Manifest for PWA support -->
+    <!-- Inline Web App Manifest for forcing standalone/fullscreen mode -->
     <link rel="manifest" href='data:application/manifest+json,{"name":"Daily Expenses App","short_name":"Expenses","start_url":".","display":"standalone","background_color":"#f8fafc","theme_color":"#4f46e5","icons":[{"src":"data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>","sizes":"512x512","type":"image/svg+xml"}]}'>
 
     <!-- Tailwind CSS -->
@@ -36,6 +39,10 @@
                             light: '#f8fafc',
                             dark: '#0f172a'
                         }
+                    },
+                    spacing: {
+                        'safe-bottom': 'env(safe-area-inset-bottom)',
+                        'safe-top': 'env(safe-area-inset-top)'
                     }
                 }
             }
@@ -45,7 +52,7 @@
 
     <!-- Custom CSS for scrollbars and animations -->
     <style>
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
         
         /* Smooth scrolling */
         html { scroll-behavior: smooth; }
@@ -89,10 +96,6 @@
         }
         .splash-container { animation: splashFadeOut 0.5s ease-in-out 2s forwards; }
         .splash-logo { animation: popIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards, floatEffect 3s ease-in-out 0.6s infinite; }
-
-        /* Glass effect */
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-        .dark .glass { background: rgba(30, 41, 59, 0.8); }
     </style>
 
     <!-- Import Maps for React and dependencies -->
@@ -129,63 +132,11 @@
         import autoTable from 'jspdf-autotable';
         import { format, parseISO, isValid, isSameDay } from 'date-fns';
 
-        // --- SAMPLE DATA ---
-        const SAMPLE_DATA = [
-            {
-                id: '2026-09-13',
-                date: '2026-09-13',
-                openingBalance: 307.00,
-                received: [
-                    { id: 'r1', source: 'Sir', amount: 1000.00 },
-                    { id: 'r2', source: 'Madam', amount: 5000.00 }
-                ],
-                expenses: [
-                    { id: 'e1', name: 'Mutton', category: 'Food', amount: 600.00 },
-                    { id: 'e2', name: 'Milk', category: 'Grocery', amount: 69.00 },
-                    { id: 'e3', name: 'Michael Store', category: 'Grocery', amount: 394.00 },
-                    { id: 'e4', name: 'Mango Items', category: 'Food', amount: 299.00 },
-                    { id: 'e5', name: 'Mali Petrol', category: 'Transport', amount: 100.00 },
-                    { id: 'e6', name: 'Kothavara', category: 'Grocery', amount: 18.00 },
-                    { id: 'e7', name: 'Wach', category: 'Other', amount: 40.00 },
-                    { id: 'e8', name: 'Oosi', category: 'Other', amount: 15.00 },
-                    { id: 'e9', name: 'Malli Items', category: 'Grocery', amount: 300.00 },
-                    { id: 'e10', name: 'Medical', category: 'Medical', amount: 200.00 },
-                    { id: 'e11', name: 'Scissor', category: 'Household', amount: 50.00 },
-                    { id: 'e12', name: 'Verkadalai Items', category: 'Food', amount: 110.00 },
-                    { id: 'e13', name: 'Tea Cash Murali', category: 'Tea', amount: 40.00, note: '2 cups' },
-                    { id: 'e14', name: 'Tea Cash', category: 'Tea', amount: 20.00 }
-                ],
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            },
-            {
-                id: '2026-09-14',
-                date: '2026-09-14',
-                openingBalance: 1001.00,
-                received: [
-                    { id: 'r3', source: 'Madam', amount: 4000.00 }
-                ],
-                expenses: [
-                    { id: 'e15', name: 'Milk', category: 'Grocery', amount: 46.00 },
-                    { id: 'e16', name: 'Pampers', category: 'Personal', amount: 929.00 },
-                    { id: 'e17', name: 'Milk', category: 'Grocery', amount: 46.00 },
-                    { id: 'e18', name: 'Egg', category: 'Food', amount: 105.00 },
-                    { id: 'e19', name: 'Tender Coconut', category: 'Food', amount: 300.00 },
-                    { id: 'e20', name: 'Medical', category: 'Medical', amount: 2246.00, note: 'B.Nagar' },
-                    { id: 'e21', name: 'Tea Cash Murali', category: 'Tea', amount: 20.00 },
-                    { id: 'e22', name: 'Tea Cash', category: 'Tea', amount: 40.00, note: '2 cups' }
-                ],
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            }
-        ];
-
         const DEFAULT_SETTINGS = {
             theme: 'light',
             currency: '₹',
             carryForwardBalance: true,
             reportTitle: 'Daily Expense Report',
-            greeting: '',
             closingMessage: 'Thank you.',
             showCategories: false,
             showNotes: true,
@@ -210,7 +161,6 @@
             'Other': <MoreHorizontal size={16} />
         };
 
-        // --- UTILITIES ---
         const generateId = () => Math.random().toString(36).substr(2, 9);
         
         const formatCurrency = (amount, currency = '₹') => {
@@ -231,11 +181,10 @@
             const { totalReceived, totalExpenses, closingBalance, opening } = calculateTotals(report);
             const dateStr = format(parseISO(report.date), 'dd.MM.yyyy');
             
+            // Build string strictly matching the required visual structure
             let msg = `${settings.reportTitle}\n`;
             msg += `${dateStr}\n\n`;
             
-            if (settings.greeting) msg += `${settings.greeting}\n\n`;
-
             if (opening > 0) {
                 msg += `Opening Balance - ${formatCurrency(opening, settings.currency)}\n\n`;
             }
@@ -251,138 +200,145 @@
             if (report.expenses && report.expenses.length > 0) {
                 report.expenses.forEach(e => {
                     let noteStr = settings.showNotes && e.note ? ` (${e.note})` : '';
-                    let catStr = settings.showCategories && e.category ? ` [${e.category}]` : '';
-                    msg += `• ${e.name}${noteStr}${catStr} - ${formatCurrency(e.amount, settings.currency)}\n`;
+                    msg += `• ${e.name}${noteStr} - ${formatCurrency(e.amount, settings.currency)}\n`;
                 });
             } else {
-                msg += `• No expenses recorded.\n`;
+                msg += `• No expenses\n`;
             }
 
             msg += `\n`;
             msg += `Total Expenses - ${formatCurrency(totalExpenses, settings.currency)}\n`;
             msg += `Closing Balance - ${formatCurrency(closingBalance, settings.currency)}\n\n`;
             
-            if (settings.closingMessage) msg += `${settings.closingMessage}`;
+            if (settings.closingMessage) {
+                msg += `${settings.closingMessage}`;
+            }
             
             return msg.trim();
         };
 
         const generatePDF = (report, settings) => {
-            const doc = new jsPDF();
-            const { totalReceived, totalExpenses, closingBalance, opening } = calculateTotals(report);
-            const dateStr = format(parseISO(report.date), 'dd MMMM yyyy');
+            try {
+                // Initialize jsPDF safely
+                const doc = new jsPDF();
+                const { totalReceived, totalExpenses, closingBalance, opening } = calculateTotals(report);
+                const dateStr = format(parseISO(report.date), 'dd MMMM yyyy');
 
-            // jsPDF standard fonts don't support the ₹ symbol natively. 
-            // We map it to 'Rs.' safely for the PDF.
-            const safeCurrency = (amount) => {
-                const formatted = formatCurrency(amount, settings.currency);
-                return formatted.replace('₹', 'Rs. ');
-            };
+                // jsPDF standard fonts don't support the ₹ symbol natively. 
+                // We map it to 'Rs.' safely for the PDF.
+                const safeCurrency = (amount) => {
+                    const formatted = formatCurrency(amount, settings.currency);
+                    return formatted.replace('₹', 'Rs. ');
+                };
 
-            // Header
-            doc.setFontSize(18);
-            doc.setTextColor(30, 41, 59); // slate-800
-            doc.text(settings.reportTitle.toUpperCase(), 14, 22);
-            
-            doc.setFontSize(11);
-            doc.setTextColor(100, 116, 139); // slate-500
-            doc.text(`Date: ${dateStr}`, 14, 30);
+                // Header
+                doc.setFontSize(18);
+                doc.setTextColor(30, 41, 59);
+                doc.text(settings.reportTitle.toUpperCase(), 14, 22);
+                
+                doc.setFontSize(11);
+                doc.setTextColor(100, 116, 139);
+                doc.text(`Date: ${dateStr}`, 14, 30);
 
-            let currentY = 40;
+                let currentY = 40;
 
-            // Summary Cards (simulated with rects)
-            doc.setFillColor(248, 250, 252);
-            doc.setDrawColor(226, 232, 240);
-            
-            const cardWidth = 85;
-            const cardHeight = 25;
-            
-            // Available Card
-            doc.roundedRect(14, currentY, cardWidth, cardHeight, 3, 3, 'FD');
-            doc.setFontSize(10);
-            doc.text('Total Available', 18, currentY + 10);
-            doc.setFontSize(14);
-            doc.setTextColor(16, 185, 129); // success
-            doc.text(safeCurrency(opening + totalReceived), 18, currentY + 20);
+                // Summary Cards
+                doc.setFillColor(248, 250, 252);
+                doc.setDrawColor(226, 232, 240);
+                
+                const cardWidth = 85;
+                const cardHeight = 25;
+                
+                // Available Card
+                doc.roundedRect(14, currentY, cardWidth, cardHeight, 3, 3, 'FD');
+                doc.setFontSize(10);
+                doc.text('Total Available', 18, currentY + 10);
+                doc.setFontSize(14);
+                doc.setTextColor(16, 185, 129);
+                doc.text(safeCurrency(opening + totalReceived), 18, currentY + 20);
 
-            // Expenses Card
-            doc.roundedRect(110, currentY, cardWidth, cardHeight, 3, 3, 'FD');
-            doc.setFontSize(10);
-            doc.setTextColor(100, 116, 139);
-            doc.text('Total Expenses', 114, currentY + 10);
-            doc.setFontSize(14);
-            doc.setTextColor(239, 68, 68); // danger
-            doc.text(safeCurrency(totalExpenses), 114, currentY + 20);
+                // Expenses Card
+                doc.roundedRect(110, currentY, cardWidth, cardHeight, 3, 3, 'FD');
+                doc.setFontSize(10);
+                doc.setTextColor(100, 116, 139);
+                doc.text('Total Expenses', 114, currentY + 10);
+                doc.setFontSize(14);
+                doc.setTextColor(239, 68, 68);
+                doc.text(safeCurrency(totalExpenses), 114, currentY + 20);
 
-            currentY += 35;
+                currentY += 35;
 
-            // Balance Card (Full width)
-            doc.roundedRect(14, currentY, 181, cardHeight, 3, 3, 'FD');
-            doc.setFontSize(11);
-            doc.setTextColor(30, 41, 59);
-            doc.text('Closing Balance', 18, currentY + 10);
-            doc.setFontSize(16);
-            doc.setTextColor(79, 70, 229); // primary
-            doc.text(safeCurrency(closingBalance), 18, currentY + 20);
+                // Balance Card
+                doc.roundedRect(14, currentY, 181, cardHeight, 3, 3, 'FD');
+                doc.setFontSize(11);
+                doc.setTextColor(30, 41, 59);
+                doc.text('Closing Balance', 18, currentY + 10);
+                doc.setFontSize(16);
+                doc.setTextColor(79, 70, 229);
+                doc.text(safeCurrency(closingBalance), 18, currentY + 20);
 
-            currentY += 35;
+                currentY += 35;
 
-            // Received Table
-            if (report.received && report.received.length > 0 || opening > 0) {
-                const receivedBody = [];
-                if (opening > 0) receivedBody.push(['Opening Balance', safeCurrency(opening)]);
-                report.received.forEach(r => receivedBody.push([`${r.source} Paid`, safeCurrency(r.amount)]));
+                // Received Table
+                if (report.received && report.received.length > 0 || opening > 0) {
+                    const receivedBody = [];
+                    if (opening > 0) receivedBody.push(['Opening Balance', safeCurrency(opening)]);
+                    report.received.forEach(r => receivedBody.push([`${r.source} Paid`, safeCurrency(r.amount)]));
 
-                autoTable(doc, {
-                    startY: currentY,
-                    head: [['Money Received', 'Amount']],
-                    body: receivedBody,
-                    theme: 'grid',
-                    headStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: 'bold' },
-                    columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
-                    margin: { left: 14, right: 14 }
-                });
-                currentY = doc.lastAutoTable.finalY + 10;
+                    // Use autoTable imported from jspdf-autotable
+                    autoTable(doc, {
+                        startY: currentY,
+                        head: [['Money Received', 'Amount']],
+                        body: receivedBody,
+                        theme: 'grid',
+                        headStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: 'bold' },
+                        columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
+                        margin: { left: 14, right: 14 }
+                    });
+                    currentY = doc.lastAutoTable.finalY + 10;
+                }
+
+                // Expenses Table
+                if (report.expenses && report.expenses.length > 0) {
+                    const expensesBody = report.expenses.map((e, i) => [
+                        i + 1,
+                        e.name + (e.note ? `\n(${e.note})` : ''),
+                        e.category || '-',
+                        safeCurrency(e.amount)
+                    ]);
+
+                    autoTable(doc, {
+                        startY: currentY,
+                        head: [['#', 'Expense', 'Category', 'Amount']],
+                        body: expensesBody,
+                        theme: 'striped',
+                        headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
+                        columnStyles: { 
+                            0: { cellWidth: 15 },
+                            3: { halign: 'right', fontStyle: 'bold' } 
+                        },
+                        margin: { left: 14, right: 14 }
+                    });
+                    currentY = doc.lastAutoTable.finalY + 10;
+                }
+
+                // Footer
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(9);
+                    doc.setTextColor(148, 163, 184);
+                    doc.text(`Generated by Daily Expenses App`, 14, doc.internal.pageSize.height - 10);
+                    doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 25, doc.internal.pageSize.height - 10);
+                }
+
+                doc.save(`Expense_Report_${dateStr.replace(/\./g, '_')}.pdf`);
+            } catch (err) {
+                console.error("PDF Generation Error:", err);
+                throw new Error("Failed to generate PDF.");
             }
-
-            // Expenses Table
-            if (report.expenses && report.expenses.length > 0) {
-                const expensesBody = report.expenses.map((e, i) => [
-                    i + 1,
-                    e.name + (e.note ? `\n(${e.note})` : ''),
-                    e.category || '-',
-                    safeCurrency(e.amount)
-                ]);
-
-                autoTable(doc, {
-                    startY: currentY,
-                    head: [['#', 'Expense', 'Category', 'Amount']],
-                    body: expensesBody,
-                    theme: 'striped',
-                    headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
-                    columnStyles: { 
-                        0: { cellWidth: 15 },
-                        3: { halign: 'right', fontStyle: 'bold' } 
-                    },
-                    margin: { left: 14, right: 14 }
-                });
-                currentY = doc.lastAutoTable.finalY + 10;
-            }
-
-            // Footer
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(9);
-                doc.setTextColor(148, 163, 184);
-                doc.text(`Generated by Daily Expenses App`, 14, doc.internal.pageSize.height - 10);
-                doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 25, doc.internal.pageSize.height - 10);
-            }
-
-            doc.save(`Expense_Report_${dateStr.replace(/ /g, '_')}.pdf`);
         };
 
-        // --- HOOKS ---
         const useLocalStorage = (key, initialValue) => {
             const [storedValue, setStoredValue] = useState(() => {
                 try {
@@ -406,7 +362,6 @@
             return [storedValue, setValue];
         };
 
-        // --- COMPONENTS ---
         const ToastContext = React.createContext();
 
         const ToastProvider = ({ children }) => {
@@ -423,7 +378,7 @@
             return (
                 <ToastContext.Provider value={addToast}>
                     {children}
-                    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+                    <div className="fixed top-safe-top right-4 mt-4 z-[9999] flex flex-col gap-2 pointer-events-none">
                         {toasts.map(toast => (
                             <div key={toast.id} className={`slide-in-right flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-white pointer-events-auto
                                 ${toast.type === 'success' ? 'bg-success' : toast.type === 'error' ? 'bg-danger' : 'bg-slate-800'}`}>
@@ -479,7 +434,7 @@
             return (
                 <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center fade-in">
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className="relative w-full md:w-full md:max-w-md bg-surface-light dark:bg-surface-dark rounded-t-2xl md:rounded-2xl shadow-xl slide-up max-h-[90vh] flex flex-col m-0 md:m-4">
+                    <div className="relative w-full md:w-full md:max-w-md bg-surface-light dark:bg-surface-dark rounded-t-2xl md:rounded-2xl shadow-xl slide-up max-h-[90vh] flex flex-col m-0 md:m-4 pb-safe-bottom">
                         <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
                             <h3 className="font-semibold text-lg">{title}</h3>
                             <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
@@ -500,22 +455,22 @@
             const { totalReceived, totalExpenses, closingBalance } = calculateTotals(todayReport);
 
             return (
-                <div className="p-4 md:p-8 max-w-5xl mx-auto pb-24 md:pb-8 slide-up">
-                    <header className="mb-8 flex justify-between items-end gap-4">
+                <div className="p-4 pt-safe-top md:p-8 max-w-5xl mx-auto pb-28 md:pb-8 slide-up">
+                    <header className="mb-8 flex flex-wrap justify-between items-end gap-4 mt-2">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
                             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            {/* Install App Icon Button */}
+                            {/* Install App Icon Button (Prominent) */}
                             {showInstallButton && (
                                 <button 
                                     onClick={onInstall} 
-                                    className="p-2.5 md:px-4 md:py-2 bg-indigo-50 dark:bg-indigo-900/30 text-primary hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl md:rounded-lg flex items-center gap-2 transition-all shadow-sm border border-indigo-100 dark:border-indigo-500/30"
-                                    title="Add to Home Screen (Install App)"
+                                    className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-primary hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg flex items-center gap-2 transition-all shadow-sm border border-indigo-100 dark:border-indigo-500/30"
+                                    title="Add to Home Screen"
                                 >
-                                    <Download size={20} />
-                                    <span className="hidden md:inline font-medium">Install App</span>
+                                    <Download size={18} />
+                                    <span className="font-semibold">Install App</span>
                                 </button>
                             )}
                             <Button onClick={() => onNavigate('new')} icon={PlusCircle} className="hidden md:flex">
@@ -523,27 +478,6 @@
                             </Button>
                         </div>
                     </header>
-
-                    {/* Add to Home Screen Banner */}
-                    {showInstallButton && (
-                        <div className="mb-8 bg-gradient-to-r from-primary to-indigo-600 rounded-2xl p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg slide-up relative overflow-hidden">
-                            {/* Decorative background pattern */}
-                            <div className="absolute inset-0 opacity-[0.1] pointer-events-none" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Cg/%3E%3C/svg%3E")'}}></div>
-                            
-                            <div className="flex items-center gap-4 relative z-10">
-                                <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm shadow-inner text-white">
-                                    <Download size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-lg">Add to Home Screen</h3>
-                                    <p className="text-indigo-100 text-sm mt-0.5">Install the app for offline use and quick access from your device.</p>
-                                </div>
-                            </div>
-                            <Button onClick={onInstall} className="bg-white text-primary hover:bg-slate-50 border-none shadow-md w-full sm:w-auto relative z-10 whitespace-nowrap px-6">
-                                Install App
-                            </Button>
-                        </div>
-                    )}
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         <Card className="bg-gradient-to-br from-indigo-500 to-primary text-white border-none shadow-indigo-200 dark:shadow-none">
@@ -625,19 +559,18 @@
                 const existingToday = reports.find(r => r.date === todayStr);
                 if (existingToday) return JSON.parse(JSON.stringify(existingToday));
 
-                // Auto carry forward logic
                 let initialOpening = 0;
                 if (settings.carryForwardBalance && reports.length > 0) {
                     const sortedReports = [...reports].sort((a, b) => new Date(b.date) - new Date(a.date));
                     const latestReport = sortedReports[0];
-                    if (latestReport.date !== todayStr) { // Don't carry forward if we somehow have a future report
+                    if (latestReport.date !== todayStr) {
                         const prevTotals = calculateTotals(latestReport);
                         initialOpening = prevTotals.closingBalance;
                     }
                 }
 
                 return {
-                    id: todayStr, // using date as ID for simplicity if one per day
+                    id: todayStr,
                     date: todayStr,
                     openingBalance: initialOpening,
                     received: [],
@@ -649,25 +582,19 @@
             const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
             const [editingItem, setEditingItem] = useState(null);
 
-            // Form States
             const [expForm, setExpForm] = useState({ name: '', amount: '', category: 'Grocery', note: '' });
             const [incForm, setIncForm] = useState({ source: '', amount: '' });
 
             const { totalReceived, totalExpenses, closingBalance, opening } = calculateTotals(report);
 
-            // Save automatically on change
             useEffect(() => {
                 const newReports = [...reports];
                 const index = newReports.findIndex(r => r.id === report.id);
-                
                 const updatedReport = { ...report, updatedAt: new Date().toISOString() };
                 
-                if (index >= 0) {
-                    newReports[index] = updatedReport;
-                } else {
-                    newReports.push(updatedReport);
-                }
-                // Sort by date descending
+                if (index >= 0) newReports[index] = updatedReport;
+                else newReports.push(updatedReport);
+                
                 newReports.sort((a, b) => new Date(b.date) - new Date(a.date));
                 setReports(newReports);
             }, [report]);
@@ -687,20 +614,14 @@
                     note: expForm.note
                 };
 
-                if (editingItem) {
-                    setReport(prev => ({
-                        ...prev,
-                        expenses: prev.expenses.map(ex => ex.id === newExp.id ? newExp : ex)
-                    }));
-                    toast('Expense updated');
-                } else {
-                    setReport(prev => ({
-                        ...prev,
-                        expenses: [newExp, ...prev.expenses]
-                    }));
-                    toast('Expense added');
-                }
+                setReport(prev => ({
+                    ...prev,
+                    expenses: editingItem 
+                        ? prev.expenses.map(ex => ex.id === newExp.id ? newExp : ex)
+                        : [newExp, ...prev.expenses]
+                }));
                 
+                toast(editingItem ? 'Expense updated' : 'Expense added');
                 setIsExpenseModalOpen(false);
                 setExpForm({ name: '', amount: '', category: 'Grocery', note: '' });
                 setEditingItem(null);
@@ -719,20 +640,14 @@
                     amount: parseFloat(incForm.amount)
                 };
 
-                if (editingItem) {
-                    setReport(prev => ({
-                        ...prev,
-                        received: prev.received.map(r => r.id === newInc.id ? newInc : r)
-                    }));
-                    toast('Received amount updated');
-                } else {
-                    setReport(prev => ({
-                        ...prev,
-                        received: [...prev.received, newInc]
-                    }));
-                    toast('Received amount added');
-                }
+                setReport(prev => ({
+                    ...prev,
+                    received: editingItem
+                        ? prev.received.map(r => r.id === newInc.id ? newInc : r)
+                        : [...prev.received, newInc]
+                }));
 
+                toast(editingItem ? 'Received amount updated' : 'Received amount added');
                 setIsIncomeModalOpen(false);
                 setIncForm({ source: '', amount: '' });
                 setEditingItem(null);
@@ -740,18 +655,14 @@
 
             const deleteItem = (type, id) => {
                 if (confirm('Are you sure you want to delete this?')) {
-                    if (type === 'expense') {
-                        setReport(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
-                    } else {
-                        setReport(prev => ({ ...prev, received: prev.received.filter(r => r.id !== id) }));
-                    }
+                    if (type === 'expense') setReport(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
+                    else setReport(prev => ({ ...prev, received: prev.received.filter(r => r.id !== id) }));
                     toast('Item deleted');
                 }
             };
 
             const handleShare = async () => {
                 const text = generateWhatsAppText(report, settings);
-                
                 if (navigator.share) {
                     try {
                         await navigator.share({
@@ -759,9 +670,7 @@
                             text: text,
                         });
                         toast('Shared successfully');
-                    } catch (err) {
-                        console.log('Share cancelled or failed', err);
-                    }
+                    } catch (err) { console.log('Share cancelled', err); }
                 } else {
                     copyToClipboard(text);
                 }
@@ -771,17 +680,12 @@
                 navigator.clipboard.writeText(text).then(() => {
                     toast('Copied to clipboard!');
                 }).catch(err => {
-                    // Fallback
                     const textArea = document.createElement("textarea");
                     textArea.value = text;
                     document.body.appendChild(textArea);
                     textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        toast('Copied to clipboard!');
-                    } catch (err) {
-                        toast('Failed to copy', 'error');
-                    }
+                    try { document.execCommand('copy'); toast('Copied to clipboard!'); } 
+                    catch (err) { toast('Failed to copy', 'error'); }
                     document.body.removeChild(textArea);
                 });
             };
@@ -792,40 +696,23 @@
                     toast('PDF Generated successfully');
                 } catch (e) {
                     toast('Failed to generate PDF', 'error');
-                    console.error(e);
                 }
             };
 
             const handleDateChange = (e) => {
                 const newDate = e.target.value;
-                // If a report exists for this date, load it, otherwise change ID and date
                 const existing = reports.find(r => r.date === newDate);
                 if (existing) {
-                    if(confirm("A report already exists for this date. Load it?")) {
-                        setReport(JSON.parse(JSON.stringify(existing)));
-                    } else {
-                        e.target.value = report.date; // revert
-                    }
+                    if(confirm("A report already exists for this date. Load it?")) setReport(JSON.parse(JSON.stringify(existing)));
+                    else e.target.value = report.date;
                 } else {
                     setReport(prev => ({ ...prev, id: newDate, date: newDate }));
                 }
             };
 
-            const openEditIncome = (inc) => {
-                setEditingItem(inc);
-                setIncForm({ source: inc.source, amount: inc.amount.toString() });
-                setIsIncomeModalOpen(true);
-            };
-
-            const openEditExpense = (exp) => {
-                setEditingItem(exp);
-                setExpForm({ name: exp.name, amount: exp.amount.toString(), category: exp.category, note: exp.note || '' });
-                setIsExpenseModalOpen(true);
-            };
-
             return (
-                <div className="p-4 md:p-8 max-w-4xl mx-auto pb-32 md:pb-8 slide-up">
-                    <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="p-4 pt-safe-top md:p-8 max-w-4xl mx-auto pb-32 md:pb-8 slide-up">
+                    <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 mt-2">
                         <div>
                             <input 
                                 type="date" 
@@ -891,7 +778,7 @@
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-semibold text-success">{formatCurrency(r.amount, settings.currency)}</span>
                                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => openEditIncome(r)} className="text-slate-400 hover:text-primary"><Edit2 size={14}/></button>
+                                                        <button onClick={() => { setEditingItem(r); setIncForm({ source: r.source, amount: r.amount.toString() }); setIsIncomeModalOpen(true); }} className="text-slate-400 hover:text-primary"><Edit2 size={14}/></button>
                                                         <button onClick={() => deleteItem('income', r.id)} className="text-slate-400 hover:text-danger"><Trash2 size={14}/></button>
                                                     </div>
                                                 </div>
@@ -909,11 +796,7 @@
                                         {settings.quickExpenses.map((qe, idx) => (
                                             <button 
                                                 key={idx}
-                                                onClick={() => {
-                                                    setEditingItem(null);
-                                                    setExpForm({ name: qe.name, amount: '', category: qe.category, note: '' });
-                                                    setIsExpenseModalOpen(true);
-                                                }}
+                                                onClick={() => { setEditingItem(null); setExpForm({ name: qe.name, amount: '', category: qe.category, note: '' }); setIsExpenseModalOpen(true); }}
                                                 className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-sm font-medium px-3 py-1.5 rounded-full transition-colors border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-1"
                                             >
                                                 <Plus size={12}/> {qe.name}
@@ -939,7 +822,6 @@
                                 </div>
                             ) : (
                                 <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-                                    {/* Desktop Table Header */}
                                     <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 font-medium text-sm text-slate-500">
                                         <div className="col-span-4">Expense</div>
                                         <div className="col-span-3">Category</div>
@@ -950,7 +832,6 @@
                                     <div className="divide-y divide-slate-100 dark:divide-slate-800">
                                         {report.expenses.map(exp => (
                                             <div key={exp.id} className="p-4 flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                                                
                                                 {/* Mobile View */}
                                                 <div className="md:hidden flex justify-between items-start mb-2">
                                                     <div className="flex items-start gap-3">
@@ -965,7 +846,7 @@
                                                     <div className="font-bold text-lg">{formatCurrency(exp.amount, settings.currency)}</div>
                                                 </div>
                                                 <div className="md:hidden flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-2 mt-2">
-                                                    <Button variant="ghost" className="px-2 py-1 text-sm h-auto" onClick={() => openEditExpense(exp)}><Edit2 size={14} className="mr-1"/> Edit</Button>
+                                                    <Button variant="ghost" className="px-2 py-1 text-sm h-auto" onClick={() => { setEditingItem(exp); setExpForm({ name: exp.name, amount: exp.amount.toString(), category: exp.category, note: exp.note || '' }); setIsExpenseModalOpen(true); }}><Edit2 size={14} className="mr-1"/> Edit</Button>
                                                     <Button variant="danger" className="px-2 py-1 text-sm h-auto bg-transparent border-0" onClick={() => deleteItem('expense', exp.id)}><Trash2 size={14} className="mr-1"/> Delete</Button>
                                                 </div>
 
@@ -981,7 +862,7 @@
                                                     {formatCurrency(exp.amount, settings.currency)}
                                                 </div>
                                                 <div className="hidden md:flex col-span-3 justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => openEditExpense(exp)} className="p-2 text-slate-400 hover:text-primary bg-slate-100 dark:bg-slate-800 rounded-lg"><Edit2 size={16}/></button>
+                                                    <button onClick={() => { setEditingItem(exp); setExpForm({ name: exp.name, amount: exp.amount.toString(), category: exp.category, note: exp.note || '' }); setIsExpenseModalOpen(true); }} className="p-2 text-slate-400 hover:text-primary bg-slate-100 dark:bg-slate-800 rounded-lg"><Edit2 size={16}/></button>
                                                     <button onClick={() => deleteItem('expense', exp.id)} className="p-2 text-slate-400 hover:text-danger bg-slate-100 dark:bg-slate-800 rounded-lg"><Trash2 size={16}/></button>
                                                 </div>
                                             </div>
@@ -993,7 +874,7 @@
                     </div>
 
                     {/* Floating Add Button for Mobile */}
-                    <div className="md:hidden fixed bottom-20 right-4 z-40">
+                    <div className="md:hidden fixed bottom-24 right-4 z-40">
                         <button onClick={() => { setEditingItem(null); setExpForm({name:'', amount:'', category:'Grocery', note:''}); setIsExpenseModalOpen(true); }} className="bg-primary text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all">
                             <Plus size={28} />
                         </button>
@@ -1007,33 +888,14 @@
                         
                         <div className="relative max-w-sm mx-auto">
                             {/* Chat background simulation */}
-                            <div className="absolute inset-0 bg-[#efeae2] dark:bg-[#0b141a] rounded-2xl overflow-hidden shadow-inner border border-slate-200 dark:border-slate-700">
-                                {/* Doodles pattern */}
-                                <div className="absolute inset-0 opacity-[0.06] dark:opacity-[0.03] pointer-events-none mix-blend-multiply dark:mix-blend-screen" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M54.627 0l.83.83-53.797 53.798-.83-.83L54.627 0zM29.5 0l29.5 29.5-29.5 29.5L0 29.5 29.5 0zm0 3.328L3.328 29.5 29.5 55.672 55.672 29.5 29.5 3.328zM31 15a1 1 0 110 2h-4a1 1 0 110-2h4zm0 6a1 1 0 110 2h-4a1 1 0 110-2h4zm0 6a1 1 0 110 2h-4a1 1 0 110-2h4zm0 6a1 1 0 110 2h-4a1 1 0 110-2h4zm0 6a1 1 0 110 2h-4a1 1 0 110-2h4zm0 6a1 1 0 110 2h-4a1 1 0 110-2h4z\' fill=\'%23000000\' fill-rule=\'evenodd\'/%3E%3C/svg%3E")'}}></div>
-                            </div>
+                            <div className="absolute inset-0 bg-[#efeae2] dark:bg-[#0b141a] rounded-2xl overflow-hidden shadow-inner border border-slate-200 dark:border-slate-700"></div>
                             
-                            {/* Message Bubble */}
+                            {/* Message Bubble strictly adhering to the requested design */}
                             <div className="relative p-4 pb-6">
                                 <div className="bg-white dark:bg-[#202c33] rounded-2xl rounded-tl-sm p-4 shadow-[0_1px_2px_rgba(0,0,0,0.1)] dark:shadow-none text-[15px] leading-relaxed whitespace-pre-wrap font-sans text-[#111b21] dark:text-[#e9edef] w-[95%]">
-                                    {/* Tail */}
                                     <div className="absolute top-0 left-[-8px] w-0 h-0 border-[10px] border-transparent border-t-white dark:border-t-[#202c33] border-r-white dark:border-r-[#202c33]"></div>
                                     
-                                    {/* Content rendered with WhatsApp formatting simulated (bolding *) */}
-                                    {generateWhatsAppText(report, settings).split('\n').map((line, i) => {
-                                        // Simple regex to bold text between asterisks (kept for user custom titles)
-                                        const parts = line.split(/(\*[^*]+\*)/g);
-                                        return (
-                                            <React.Fragment key={i}>
-                                                {parts.map((part, j) => {
-                                                    if (part.startsWith('*') && part.endsWith('*')) {
-                                                        return <strong key={j} className="font-bold">{part.slice(1, -1)}</strong>;
-                                                    }
-                                                    return part;
-                                                })}
-                                                {i < generateWhatsAppText(report, settings).split('\n').length - 1 && <br />}
-                                            </React.Fragment>
-                                        );
-                                    })}
+                                    {generateWhatsAppText(report, settings)}
                                     
                                     {/* Mock time at bottom right */}
                                     <div className="float-right mt-1 ml-3 text-[11px] text-[#667781] dark:text-[#8696a0] flex items-center gap-1">
@@ -1048,24 +910,8 @@
                     {/* Modals */}
                     <Modal isOpen={isIncomeModalOpen} onClose={() => setIsIncomeModalOpen(false)} title={editingItem ? "Edit Received" : "Add Money Received"}>
                         <form onSubmit={handleAddIncome} className="space-y-4">
-                            <Input 
-                                label="Received From (Source)" 
-                                placeholder="e.g. Sir, Madam, Bank" 
-                                value={incForm.source}
-                                onChange={e => setIncForm(prev => ({...prev, source: e.target.value}))}
-                                autoFocus
-                                required
-                            />
-                            <Input 
-                                label="Amount" 
-                                type="number" 
-                                step="any"
-                                placeholder="0.00" 
-                                icon={() => <span className="text-slate-500 font-medium">{settings.currency}</span>}
-                                value={incForm.amount}
-                                onChange={e => setIncForm(prev => ({...prev, amount: e.target.value}))}
-                                required
-                            />
+                            <Input label="Received From (Source)" placeholder="e.g. Sir, Madam, Bank" value={incForm.source} onChange={e => setIncForm(prev => ({...prev, source: e.target.value}))} autoFocus required />
+                            <Input label="Amount" type="number" step="any" placeholder="0.00" icon={() => <span className="text-slate-500 font-medium">{settings.currency}</span>} value={incForm.amount} onChange={e => setIncForm(prev => ({...prev, amount: e.target.value}))} required />
                             <Button type="submit" className="w-full mt-2 text-lg py-3">{editingItem ? 'Update' : 'Add'} Amount</Button>
                         </form>
                     </Modal>
@@ -1073,41 +919,15 @@
                     <Modal isOpen={isExpenseModalOpen} onClose={() => setIsExpenseModalOpen(false)} title={editingItem ? "Edit Expense" : "Add Expense"}>
                         <form onSubmit={handleAddExpense} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <Input 
-                                    label="Expense Name" 
-                                    placeholder="e.g. Milk, Petrol" 
-                                    value={expForm.name}
-                                    onChange={e => setExpForm(prev => ({...prev, name: e.target.value}))}
-                                    className="col-span-2"
-                                    autoFocus
-                                    required
-                                />
-                                <Input 
-                                    label="Amount" 
-                                    type="number" 
-                                    step="any"
-                                    placeholder="0.00" 
-                                    icon={() => <span className="text-slate-500 font-medium">{settings.currency}</span>}
-                                    value={expForm.amount}
-                                    onChange={e => setExpForm(prev => ({...prev, amount: e.target.value}))}
-                                    className="col-span-2"
-                                    required
-                                />
+                                <Input label="Expense Name" placeholder="e.g. Milk, Petrol" value={expForm.name} onChange={e => setExpForm(prev => ({...prev, name: e.target.value}))} className="col-span-2" autoFocus required />
+                                <Input label="Amount" type="number" step="any" placeholder="0.00" icon={() => <span className="text-slate-500 font-medium">{settings.currency}</span>} value={expForm.amount} onChange={e => setExpForm(prev => ({...prev, amount: e.target.value}))} className="col-span-2" required />
                             </div>
                             
                             <div>
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Category</label>
                                 <div className="grid grid-cols-4 gap-2">
                                     {CATEGORIES.map(cat => (
-                                        <button
-                                            key={cat}
-                                            type="button"
-                                            onClick={() => setExpForm(prev => ({...prev, category: cat}))}
-                                            className={`flex flex-col items-center justify-center p-2 rounded-lg border text-xs gap-1 transition-all
-                                                ${expForm.category === cat 
-                                                    ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
-                                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50'}`}
-                                        >
+                                        <button key={cat} type="button" onClick={() => setExpForm(prev => ({...prev, category: cat}))} className={`flex flex-col items-center justify-center p-2 rounded-lg border text-xs gap-1 transition-all ${expForm.category === cat ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50'}`}>
                                             {CATEGORY_ICONS[cat]}
                                             <span className="truncate w-full text-center">{cat}</span>
                                         </button>
@@ -1115,12 +935,7 @@
                                 </div>
                             </div>
 
-                            <Input 
-                                label="Note (Optional)" 
-                                placeholder="Additional details..." 
-                                value={expForm.note}
-                                onChange={e => setExpForm(prev => ({...prev, note: e.target.value}))}
-                            />
+                            <Input label="Note (Optional)" placeholder="Additional details..." value={expForm.note} onChange={e => setExpForm(prev => ({...prev, note: e.target.value}))} />
                             <Button type="submit" className="w-full mt-4 text-lg py-3">{editingItem ? 'Update' : 'Add'} Expense</Button>
                         </form>
                     </Modal>
@@ -1140,16 +955,12 @@
             const handleDuplicate = (report) => {
                 const newDate = format(new Date(), 'yyyy-MM-dd');
                 if (reports.some(r => r.date === newDate)) {
-                    if(!confirm("A report for today already exists. Do you want to overwrite it with this copy?")) return;
+                    if(!confirm("A report for today already exists. Overwrite it?")) return;
                 }
                 
                 const duplicated = JSON.parse(JSON.stringify(report));
                 duplicated.id = newDate;
                 duplicated.date = newDate;
-                duplicated.createdAt = new Date().toISOString();
-                duplicated.updatedAt = new Date().toISOString();
-                
-                // Allow user to decide if they want to clear amounts in a real app, here we copy exactly as requested "copy structure while allowing to modify"
                 
                 setReports(prev => {
                     const filtered = prev.filter(r => r.date !== newDate);
@@ -1161,22 +972,17 @@
             };
 
             const handleDelete = (id) => {
-                if(confirm("Are you sure you want to delete this entire report? This cannot be undone.")) {
+                if(confirm("Are you sure you want to delete this report?")) {
                     setReports(prev => prev.filter(r => r.id !== id));
                     toast('Report deleted');
                 }
             };
 
             return (
-                <div className="p-4 md:p-8 max-w-4xl mx-auto pb-24 md:pb-8 slide-up">
-                    <header className="mb-6">
+                <div className="p-4 pt-safe-top md:p-8 max-w-4xl mx-auto pb-24 md:pb-8 slide-up">
+                    <header className="mb-6 mt-2">
                         <h1 className="text-2xl font-bold mb-4">History</h1>
-                        <Input 
-                            placeholder="Search expenses or dates..." 
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="max-w-md"
-                        />
+                        <Input placeholder="Search expenses or dates..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-md" />
                     </header>
 
                     {filteredReports.length === 0 ? (
@@ -1189,7 +995,6 @@
                             {filteredReports.map(report => {
                                 const { totalReceived, totalExpenses, closingBalance, opening } = calculateTotals(report);
                                 const dateObj = parseISO(report.date);
-                                
                                 return (
                                     <Card key={report.id} className="group hover:border-primary/50 transition-colors">
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1197,7 +1002,6 @@
                                                 <div className="bg-primary/10 text-primary rounded-lg p-3 text-center min-w-[70px]">
                                                     <div className="text-sm font-bold uppercase">{format(dateObj, 'MMM')}</div>
                                                     <div className="text-2xl font-black leading-none">{format(dateObj, 'dd')}</div>
-                                                    <div className="text-xs font-medium mt-1">{format(dateObj, 'yyyy')}</div>
                                                 </div>
                                                 <div>
                                                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mb-2">
@@ -1205,19 +1009,13 @@
                                                         <span className="text-slate-500">Received: <span className="font-semibold text-success">{formatCurrency(totalReceived, settings.currency)}</span></span>
                                                         <span className="text-slate-500">Spent: <span className="font-semibold text-danger">{formatCurrency(totalExpenses, settings.currency)}</span></span>
                                                     </div>
-                                                    <div className="text-lg font-bold">
-                                                        Balance: <span className="text-primary">{formatCurrency(closingBalance, settings.currency)}</span>
-                                                    </div>
+                                                    <div className="text-lg font-bold">Balance: <span className="text-primary">{formatCurrency(closingBalance, settings.currency)}</span></div>
                                                 </div>
                                             </div>
                                             
                                             <div className="flex items-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 dark:border-slate-800">
                                                 <Button variant="ghost" className="p-2" onClick={() => onNavigate('new', report.id)} title="Edit"><Edit2 size={18}/></Button>
                                                 <Button variant="ghost" className="p-2" onClick={() => handleDuplicate(report)} title="Duplicate to Today"><Copy size={18}/></Button>
-                                                <Button variant="ghost" className="p-2" onClick={() => {
-                                                    copyToClipboard(generateWhatsAppText(report, settings));
-                                                    toast('Copied to clipboard');
-                                                }} title="Copy WhatsApp"><Share2 size={18}/></Button>
                                                 <Button variant="ghost" className="p-2 text-danger hover:bg-red-50" onClick={() => handleDelete(report.id)} title="Delete"><Trash2 size={18}/></Button>
                                             </div>
                                         </div>
@@ -1237,11 +1035,8 @@
             const toggleTheme = () => {
                 const newTheme = settings.theme === 'light' ? 'dark' : 'light';
                 setSettings(prev => ({ ...prev, theme: newTheme }));
-                if (newTheme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
+                if (newTheme === 'dark') document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
             };
 
             const handleExport = () => {
@@ -1250,7 +1045,6 @@
                 
                 const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
                 const exportFileDefaultName = `expenses_backup_${format(new Date(), 'yyyy-MM-dd')}.json`;
-
                 const linkElement = document.createElement('a');
                 linkElement.setAttribute('href', dataUri);
                 linkElement.setAttribute('download', exportFileDefaultName);
@@ -1269,39 +1063,22 @@
                         if (Array.isArray(parsedData)) {
                             setReports(parsedData);
                             toast('Data imported successfully');
-                        } else {
-                            toast('Invalid file format', 'error');
-                        }
-                    } catch (err) {
-                        toast('Error parsing file', 'error');
-                    }
+                        } else toast('Invalid file format', 'error');
+                    } catch (err) { toast('Error parsing file', 'error'); }
                 };
                 reader.readAsText(file);
-                // Reset input
                 e.target.value = null;
             };
 
-            const handleClearAll = () => {
-                if(confirm("Are you absolutely sure you want to delete ALL data? This action cannot be reversed.")) {
-                    if(confirm("Please confirm again. DELETE ALL DATA?")) {
-                        setReports([]);
-                        toast('All data cleared');
-                    }
-                }
-            };
-
             return (
-                <div className="p-4 md:p-8 max-w-3xl mx-auto pb-24 md:pb-8 slide-up">
-                    <h1 className="text-2xl font-bold mb-6">Settings</h1>
+                <div className="p-4 pt-safe-top md:p-8 max-w-3xl mx-auto pb-24 md:pb-8 slide-up">
+                    <h1 className="text-2xl font-bold mb-6 mt-2">Settings</h1>
                     
                     <div className="space-y-6">
                         <Card>
                             <h2 className="text-lg font-semibold mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Appearance</h2>
                             <div className="flex items-center justify-between py-2">
-                                <div>
-                                    <div className="font-medium">Theme</div>
-                                    <div className="text-sm text-slate-500">Choose light or dark mode</div>
-                                </div>
+                                <div><div className="font-medium">Theme</div><div className="text-sm text-slate-500">Choose light or dark mode</div></div>
                                 <Button variant="outline" onClick={toggleTheme} icon={settings.theme === 'light' ? Moon : Sun}>
                                     {settings.theme === 'light' ? 'Dark Mode' : 'Light Mode'}
                                 </Button>
@@ -1311,42 +1088,15 @@
                         <Card>
                             <h2 className="text-lg font-semibold mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Report Format</h2>
                             <div className="space-y-4">
-                                <Input 
-                                    label="Report Title" 
-                                    value={settings.reportTitle}
-                                    onChange={e => setSettings(prev => ({...prev, reportTitle: e.target.value}))}
-                                />
-                                <Input 
-                                    label="Greeting (Optional)" 
-                                    placeholder="e.g. Sir," 
-                                    value={settings.greeting}
-                                    onChange={e => setSettings(prev => ({...prev, greeting: e.target.value}))}
-                                />
-                                <Input 
-                                    label="Closing Message" 
-                                    value={settings.closingMessage}
-                                    onChange={e => setSettings(prev => ({...prev, closingMessage: e.target.value}))}
-                                />
+                                <Input label="Report Title" value={settings.reportTitle} onChange={e => setSettings(prev => ({...prev, reportTitle: e.target.value}))} />
+                                <Input label="Closing Message" value={settings.closingMessage} onChange={e => setSettings(prev => ({...prev, closingMessage: e.target.value}))} />
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Input 
-                                        label="Currency Symbol" 
-                                        value={settings.currency}
-                                        onChange={e => setSettings(prev => ({...prev, currency: e.target.value}))}
-                                    />
+                                    <Input label="Currency Symbol" value={settings.currency} onChange={e => setSettings(prev => ({...prev, currency: e.target.value}))} />
                                 </div>
-                                
                                 <div className="pt-2 space-y-3">
                                     <label className="flex items-center gap-3 cursor-pointer">
                                         <input type="checkbox" checked={settings.carryForwardBalance} onChange={e => setSettings(prev => ({...prev, carryForwardBalance: e.target.checked}))} className="w-5 h-5 rounded text-primary focus:ring-primary" />
                                         <span>Auto carry forward closing balance</span>
-                                    </label>
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input type="checkbox" checked={settings.showCategories} onChange={e => setSettings(prev => ({...prev, showCategories: e.target.checked}))} className="w-5 h-5 rounded text-primary focus:ring-primary" />
-                                        <span>Show categories in WhatsApp message</span>
-                                    </label>
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input type="checkbox" checked={settings.showNotes} onChange={e => setSettings(prev => ({...prev, showNotes: e.target.checked}))} className="w-5 h-5 rounded text-primary focus:ring-primary" />
-                                        <span>Show expense notes in WhatsApp message</span>
                                     </label>
                                 </div>
                             </div>
@@ -1359,9 +1109,6 @@
                                     <Button variant="outline" onClick={handleExport} icon={Download} className="flex-1">Backup Data</Button>
                                     <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
                                     <Button variant="outline" onClick={() => fileInputRef.current?.click()} icon={Upload} className="flex-1">Restore Data</Button>
-                                </div>
-                                <div className="pt-4 border-t border-red-100 dark:border-red-900/20">
-                                    <Button variant="danger" onClick={handleClearAll} icon={Trash2} className="w-full">Clear All Data</Button>
                                 </div>
                             </div>
                         </Card>
@@ -1377,49 +1124,42 @@
             // UI & PWA States
             const [showSplash, setShowSplash] = useState(true);
             const [installPrompt, setInstallPrompt] = useState(null);
+            // Check standalone dynamically matching the manifest settings
             const [isStandalone, setIsStandalone] = useState(
-                window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
+                window.matchMedia('(display-mode: standalone)').matches || 
+                window.matchMedia('(display-mode: fullscreen)').matches || 
+                window.navigator.standalone
             );
             const [showInstallGuide, setShowInstallGuide] = useState(false);
             const showInstallButton = !isStandalone;
             
-            // Initialize states from local storage
-            const [reports, setReports] = useLocalStorage('expenses_reports', SAMPLE_DATA);
+            // Sample Data loading structure
+            const SAMPLE = [{
+                id: format(new Date(), 'yyyy-MM-dd'), date: format(new Date(), 'yyyy-MM-dd'), openingBalance: 10000.00,
+                received: [], expenses: [ { id: 'e1', name: 'auto', category: 'Transport', amount: 20.00 }, { id: 'e2', name: 'Milk', category: 'Grocery', amount: 50.00 } ]
+            }];
+
+            const [reports, setReports] = useLocalStorage('expenses_reports', SAMPLE);
             const [settings, setSettings] = useLocalStorage('expenses_settings', DEFAULT_SETTINGS);
 
-            // Apply theme on mount and when settings change
             useEffect(() => {
-                if (settings.theme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
+                if (settings.theme === 'dark') document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
             }, [settings.theme]);
 
-            // Splash Screen & PWA Install Prompt Logic
             useEffect(() => {
-                // Remove splash screen after animation completes
-                const splashTimer = setTimeout(() => {
-                    setShowSplash(false);
-                }, 2500);
+                const splashTimer = setTimeout(() => setShowSplash(false), 2500);
 
-                // Listen for PWA install prompt
                 const handleBeforeInstallPrompt = (e) => {
-                    e.preventDefault(); // Prevent automatic prompt
-                    setInstallPrompt(e); // Store event to trigger manually
+                    e.preventDefault();
+                    setInstallPrompt(e);
                 };
                 
                 window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-                
                 window.addEventListener('appinstalled', () => {
                     setInstallPrompt(null);
                     setIsStandalone(true);
                 });
-
-                // Check standalone mode on mount for Safari/iOS
-                if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-                    setIsStandalone(true);
-                }
 
                 return () => {
                     clearTimeout(splashTimer);
@@ -1436,7 +1176,6 @@
                         setIsStandalone(true);
                     }
                 } else {
-                    // Show manual instructions modal if prompt isn't available natively (e.g. iOS)
                     setShowInstallGuide(true);
                 }
             };
@@ -1447,13 +1186,12 @@
                 window.scrollTo(0, 0);
             };
 
-            const NavItem = ({ tab, icon: Icon, label, hiddenDesktop = false, hiddenMobile = false }) => {
+            const NavItem = ({ tab, icon: Icon, label }) => {
                 const isActive = currentTab === tab;
                 return (
                     <button 
                         onClick={() => navigate(tab)}
                         className={`flex flex-col md:flex-row items-center gap-1 md:gap-3 p-2 md:p-3 md:px-4 rounded-xl transition-all
-                            ${hiddenDesktop ? 'md:hidden' : ''} ${hiddenMobile ? 'hidden md:flex' : ''}
                             ${isActive 
                                 ? 'text-primary bg-primary/10 font-semibold' 
                                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`}
@@ -1466,7 +1204,7 @@
 
             return (
                 <ToastProvider>
-                    {/* Intro Splash Screen */}
+                    {/* Splash Screen Animation */}
                     {showSplash && (
                         <div className="fixed inset-0 z-[100] bg-primary flex flex-col items-center justify-center text-white splash-container">
                             <div className="splash-logo flex flex-col items-center gap-5">
@@ -1482,9 +1220,8 @@
                     )}
 
                     <div className="min-h-screen flex flex-col md:flex-row bg-background-light dark:bg-background-dark">
-                        
                         {/* Desktop Sidebar */}
-                        <aside className="hidden md:flex flex-col w-64 fixed inset-y-0 left-0 bg-surface-light dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 z-30">
+                        <aside className="hidden md:flex flex-col w-64 fixed inset-y-0 left-0 bg-surface-light dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 z-30 pt-safe-top pb-safe-bottom">
                             <div className="p-6">
                                 <div className="flex items-center gap-3 text-primary font-bold text-xl">
                                     <div className="bg-primary text-white p-2 rounded-lg">
@@ -1499,7 +1236,6 @@
                                 <NavItem tab="history" icon={HistoryIcon} label="History" />
                             </nav>
                             <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-                                {/* Sidebar Install Icon */}
                                 {showInstallButton && (
                                     <button onClick={handleInstall} className="w-full flex items-center gap-3 p-3 rounded-xl text-primary bg-primary/10 hover:bg-primary/20 font-medium transition-colors">
                                         <Download size={22} className="w-5 h-5" />
@@ -1518,8 +1254,8 @@
                             {currentTab === 'settings' && <SettingsView settings={settings} setSettings={setSettings} setReports={setReports} />}
                         </main>
 
-                        {/* Mobile Bottom Navigation */}
-                        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface-light/90 dark:bg-surface-dark/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex justify-around items-center p-2 pb-safe z-30 shadow-[0_-5px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-5px_10px_rgba(0,0,0,0.2)]">
+                        {/* Mobile Bottom Navigation (SafeArea padded) */}
+                        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface-light/90 dark:bg-surface-dark/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex justify-around items-center p-2 pb-safe-bottom z-30 shadow-[0_-5px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-5px_10px_rgba(0,0,0,0.2)]">
                             <NavItem tab="dashboard" icon={Home} label="Home" />
                             <NavItem tab="new" icon={PlusCircle} label="Add" />
                             <NavItem tab="history" icon={HistoryIcon} label="History" />
@@ -1530,15 +1266,13 @@
                         <Modal isOpen={showInstallGuide} onClose={() => setShowInstallGuide(false)} title="Install App">
                             <div className="space-y-5 text-slate-600 dark:text-slate-300 pb-2">
                                 <p className="text-sm">To install this app on your device for offline access, follow these instructions based on your browser:</p>
-                                
                                 <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700">
                                     <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">📱 iOS (Safari)</p>
                                     <ol className="list-decimal pl-5 space-y-2 text-sm">
-                                        <li>Tap the <strong>Share</strong> icon <Share2 size={14} className="inline mb-1 mx-1"/> at the bottom of the screen.</li>
+                                        <li>Tap the <strong>Share</strong> icon <Share2 size={14} className="inline mb-1 mx-1"/> at the bottom.</li>
                                         <li>Scroll down and tap <strong>Add to Home Screen</strong> <PlusSquare size={14} className="inline mb-1 mx-1"/>.</li>
                                     </ol>
                                 </div>
-                                
                                 <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700">
                                     <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">🤖 Android (Chrome)</p>
                                     <ol className="list-decimal pl-5 space-y-2 text-sm">
@@ -1546,7 +1280,6 @@
                                         <li>Tap <strong>Add to Home screen</strong> or <strong>Install app</strong>.</li>
                                     </ol>
                                 </div>
-                                
                                 <Button className="w-full mt-4" onClick={() => setShowInstallGuide(false)}>Got it</Button>
                             </div>
                         </Modal>
@@ -1559,34 +1292,27 @@
         root.render(<App />);
     </script>
     
-    <!-- True Service Worker for Offline PWA Capabilities -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Creates a real caching service worker inline to make the app truly offline capable
                 const swCode = `
-                    const CACHE_NAME = 'daily-expenses-v1';
-                    self.addEventListener('install', function(event) {
+                    const CACHE_NAME = 'daily-expenses-v2';
+                    const urlsToCache = [
+                        './',
+                        'https://cdn.tailwindcss.com',
+                        'https://unpkg.com/@babel/standalone/babel.min.js',
+                        'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
+                    ];
+                    self.addEventListener('install', event => {
                         event.waitUntil(
-                            caches.open(CACHE_NAME).then(function(cache) {
-                                return cache.addAll([
-                                    './',
-                                    'https://cdn.tailwindcss.com',
-                                    'https://unpkg.com/@babel/standalone/babel.min.js',
-                                    'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
-                                ]).catch(err => console.log('Cache addAll failed', err));
-                            })
+                            caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
                         );
                     });
-                    self.addEventListener('fetch', function(event) {
+                    self.addEventListener('fetch', event => {
                         event.respondWith(
-                            caches.match(event.request).then(function(response) {
-                                // Return cached version or fetch from network
+                            caches.match(event.request).then(response => {
                                 return response || fetch(event.request);
-                            }).catch(function() {
-                                // Fallback for failed network requests when offline
-                                return new Response('Offline Content');
-                            })
+                            }).catch(() => new Response('Offline Content Available'))
                         );
                     });
                 `;
@@ -1594,8 +1320,8 @@
                 const url = URL.createObjectURL(blob);
                 
                 navigator.serviceWorker.register(url)
-                    .then(registration => console.log('PWA ServiceWorker registered perfectly.'))
-                    .catch(err => console.log('PWA ServiceWorker registration failed: ', err));
+                    .then(() => console.log('PWA Offline Worker Ready.'))
+                    .catch(err => console.log('SW registration failed:', err));
             });
         }
     </script>
